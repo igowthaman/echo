@@ -1,0 +1,32 @@
+import express from 'express';
+import { ExpressPeerServer } from 'peer';
+import { createServer } from 'http';
+import { parse } from 'url';
+import next from 'next';
+
+const port = parseInt(process.env.PORT || '3000', 10);
+const dev = process.env.NODE_ENV !== 'production';
+const app = next({ dev });
+const handle = app.getRequestHandler();
+
+app.prepare().then(() => {
+  const appExpress = express();
+
+  const server = createServer((req, res) => {
+    const parsedUrl = parse(req.url!, true);
+    handle(req, res, parsedUrl);
+  });
+  const peerServer = ExpressPeerServer(server, {
+    path: '/myapp',
+  });
+
+  appExpress.use('/peerjs', peerServer);
+
+  server.listen(port);
+
+  console.log(
+    `> Server listening at http://localhost:${port} as ${
+      dev ? 'development' : process.env.NODE_ENV
+    }`
+  );
+});
