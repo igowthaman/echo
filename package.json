@@ -9,13 +9,22 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@emotion/cache": "^11.14.0",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
+    "@mui/material": "^6.4.4",
+    "@mui/material-nextjs": "^6.4.3",
+    "@types/js-cookie": "^3.0.6",
+    "cross-env": "^7.0.3",
     "express": "^4.21.2",
+    "js-cookie": "^3.0.5",
     "next": "15.1.6",
     "nodemon": "^3.1.9",
     "peer": "^1.0.2",
     "peerjs": "^1.5.4",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "sqlite3": "^5.1.7"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

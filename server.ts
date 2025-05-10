@@ -17,7 +17,7 @@ app.prepare().then(() => {
     handle(req, res, parsedUrl);
   });
   const peerServer = ExpressPeerServer(server, {
-    path: '/myapp',
+    path: '/api',
   });
 
   appExpress.use('/peerjs', peerServer);
