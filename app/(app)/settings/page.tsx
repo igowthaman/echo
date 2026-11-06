@@ -11,7 +11,7 @@ export default async function SettingsPage() {
   const user = await requireUser();
 
   return (
-    <div className="grid gap-4">
+    <div className="grid gap-4 px-4 py-5">
       <div className="flex items-center gap-1">
         <Link href="/" aria-label="Back to chats" title="Back to chats" className="btn-quiet -ml-2 p-2 text-fg">
           <ArrowLeftIcon />

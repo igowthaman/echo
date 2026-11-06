@@ -51,7 +51,7 @@ export default function CallOverlay() {
       <div
         role={incoming ? 'alertdialog' : 'status'}
         aria-label={incoming ? `${kindLabel} from ${name}` : `Calling ${name}`}
-        className="card-paper fixed inset-x-4 bottom-4 z-50 flex flex-wrap items-center gap-4 p-4 shadow-[0_18px_50px_-20px_rgba(20,24,32,0.45)] sm:left-auto sm:w-[380px]"
+        className="card-paper fixed inset-x-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-50 flex flex-wrap items-center gap-4 p-4 shadow-[0_18px_50px_-20px_rgba(20,24,32,0.45)] sm:left-auto sm:w-[380px]"
       >
         <Avatar userId={state.peer} name={name} version={avatarVersion} size="lg" />
         <div className="min-w-0 flex-1">
@@ -84,7 +84,7 @@ export default function CallOverlay() {
   const video = state.kind === 'video';
   return (
     <div role="dialog" aria-label={`${kindLabel} with ${name}`} className="fixed inset-0 z-50 flex flex-col bg-paper">
-      <header className="flex items-center gap-3 border-b border-line bg-surface px-4 py-3">
+      <header className="flex items-center gap-3 border-b border-line bg-surface px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
         <Avatar userId={state.peer} name={name} version={avatarVersion} size="lg" />
         <div className="min-w-0">
           <p className="truncate font-semibold">{name}</p>
@@ -126,7 +126,7 @@ export default function CallOverlay() {
         )}
       </div>
 
-      <div className="flex flex-wrap items-center justify-center gap-3 border-t border-line bg-surface px-4 py-4">
+      <div className="flex flex-wrap items-center justify-center gap-3 border-t border-line bg-surface px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4">
         <button type="button" onClick={calls.toggleMute} aria-pressed={calls.muted} className="btn-control">
           <MicIcon off={calls.muted} />
           {calls.muted ? 'Unmute' : 'Mute'}

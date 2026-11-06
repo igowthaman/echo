@@ -1,6 +1,9 @@
 import express from 'express';
 import { ExpressPeerServer } from 'peer';
-import { createServer, type IncomingMessage } from 'http';
+import { readFileSync } from 'fs';
+import { createServer, type IncomingMessage, type RequestListener, type Server } from 'http';
+import { createServer as createHttpsServer } from 'https';
+import { networkInterfaces } from 'os';
 import next from 'next';
 import { SESSION_COOKIE } from './lib/auth/cookie';
 import { getSessionUser } from './lib/auth/session';
@@ -53,13 +56,20 @@ app.prepare().then(() => {
   const appExpress = express();
   const handleNextUpgrade = app.getUpgradeHandler();
 
-  const server = createServer((req, res) => {
+  const handleRequest: RequestListener = (req, res) => {
     if (req.url?.startsWith('/peerjs')) {
       appExpress(req, res);
       return;
     }
     handle(req, res);
-  });
+  };
+
+  // HTTPS_KEY_FILE + HTTPS_CERT_FILE switch on HTTPS. Phones need it to make
+  // calls and install the app over Wi-Fi (npm run cert:dev makes the files).
+  const { HTTPS_KEY_FILE, HTTPS_CERT_FILE } = process.env;
+  const tls =
+    HTTPS_KEY_FILE && HTTPS_CERT_FILE ? { key: readFileSync(HTTPS_KEY_FILE), cert: readFileSync(HTTPS_CERT_FILE) } : null;
+  const server: Server = tls ? createHttpsServer(tls, handleRequest) : createServer(handleRequest);
 
   // PeerJS's WebSocket server answers every upgrade that isn't its own path
   // with a 400, which would break Next's dev reload socket. So it gets a
@@ -86,11 +96,13 @@ app.prepare().then(() => {
     peerSocketServer.emit('upgrade', req, socket, head);
   });
 
-  server.listen(port);
-
-  console.log(
-    `> Server listening at http://localhost:${port} as ${
-      dev ? 'development' : process.env.NODE_ENV
-    }`
-  );
+  server.listen(port, () => {
+    const scheme = tls ? 'https' : 'http';
+    const onNetwork = Object.values(networkInterfaces())
+      .flat()
+      .filter((address) => address && address.family === 'IPv4' && !address.internal)
+      .map((address) => `${scheme}://${address!.address}:${port}`);
+    console.log(`> Echo (${dev ? 'development' : process.env.NODE_ENV}) at ${scheme}://localhost:${port}`);
+    if (onNetwork.length > 0) console.log(`> Phones on the same network: ${onNetwork.join('  ')}`);
+  });
 });

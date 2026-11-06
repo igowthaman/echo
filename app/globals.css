@@ -50,6 +50,27 @@ body {
   outline-offset: 3px;
 }
 
+/* Feel like an app on phones: no grey flash on tap, no text selection when
+   pressing controls, no long-press menu on avatars. */
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+button,
+[role='button'] {
+  -webkit-user-select: none;
+  user-select: none;
+}
+img {
+  -webkit-touch-callout: none;
+}
+/* Installed app: no pull-to-refresh or rubber-band scrolling. */
+@media (display-mode: standalone) {
+  html,
+  body {
+    overscroll-behavior: none;
+  }
+}
+
 @layer components {
   /* A card with slightly uneven corners, like a torn sheet of paper. */
   .card-paper {

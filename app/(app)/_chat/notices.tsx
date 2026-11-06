@@ -17,7 +17,7 @@ export default function Notices() {
   if (!connection && !echo.error) return null;
 
   return (
-    <div className="grid gap-2">
+    <div className="grid gap-2 px-4 pt-3 sm:pt-5">
       {connection && (
         <p role="status" className="rounded-[12px] border border-line bg-surface px-4 py-2.5 text-sm text-muted">
           {connection}

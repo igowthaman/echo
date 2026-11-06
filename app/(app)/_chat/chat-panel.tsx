@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Avatar } from './avatar';
 import { useEchoContext } from './echo-context';
-import { PhoneIcon, PlusIcon, VideoIcon } from './icons';
+import { ArrowLeftIcon, PhoneIcon, PlusIcon, VideoIcon } from './icons';
 import { MAX_MESSAGE_LENGTH, type ChatMessage, type Conversation } from './use-echo';
 
 const timeFormat = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' });
@@ -21,7 +21,7 @@ export function RequestList() {
   const echo = useEchoContext();
   if (echo.requests.length === 0) return null;
   return (
-    <section aria-label="Chat requests" className="grid gap-2">
+    <section aria-label="Chat requests" className="grid gap-2 px-4 py-3 sm:p-0">
       {echo.requests.map(({ id, profile }) => {
         const name = profile?.displayName ?? 'Someone';
         return (
@@ -152,7 +152,7 @@ export function ChatPanel() {
   return (
     <section
       aria-label="Conversations"
-      className="card-paper grid h-[min(760px,calc(100dvh_-_8.5rem))] min-h-[420px] overflow-hidden md:grid-cols-[240px_minmax(0,1fr)]"
+      className="grid min-h-0 flex-1 overflow-hidden bg-surface sm:card-paper sm:min-h-[420px] md:grid-cols-[240px_minmax(0,1fr)]"
     >
       <div className={`${current ? 'hidden md:flex' : 'flex'} min-h-0 flex-col border-line md:border-r`}>
         <AddContact startOpen={conversations.length === 0} />
@@ -229,8 +229,8 @@ function Thread({ conversation, messages }: { conversation: Conversation; messag
   return (
     <>
       <header className="flex items-center gap-3 border-b border-line px-4 py-3">
-        <button type="button" onClick={() => echo.select(null)} className="btn-quiet -ml-2 md:hidden" aria-label="Back to contacts">
-          ←
+        <button type="button" onClick={() => echo.select(null)} className="btn-quiet -ml-2 p-2 text-fg md:hidden" aria-label="Back to contacts">
+          <ArrowLeftIcon />
         </button>
         <Avatar userId={id} name={displayName} version={conversation.avatarVersion} dot={online ? 'bg-ink' : undefined} />
         <div className="min-w-0 flex-1">
@@ -303,7 +303,7 @@ function Thread({ conversation, messages }: { conversation: Conversation; messag
           event.preventDefault();
           submit();
         }}
-        className="flex items-end gap-2 border-t border-line p-3"
+        className="flex items-end gap-2 border-t border-line p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
       >
         <label htmlFor="message-input" className="sr-only">
           Message {displayName}

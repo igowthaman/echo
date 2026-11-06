@@ -45,3 +45,6 @@ next-env.d.ts
 
 # compiled custom server (npm run build)
 /dist/
+
+# local HTTPS certificates (npm run cert:dev)
+/.certs/

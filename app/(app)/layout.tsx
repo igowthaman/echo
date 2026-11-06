@@ -1,8 +1,7 @@
-import Link from 'next/link';
 import { requireUser } from '@/lib/auth/current-user';
 import { listContacts } from '@/lib/contacts';
 import { isOnline } from '@/lib/presence';
-import AccountBadge from './_chat/account-badge';
+import AppHeader from './_chat/app-header';
 import { EchoProvider } from './_chat/echo-provider';
 import Notices from './_chat/notices';
 
@@ -12,18 +11,15 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <EchoProvider me={{ id: user.id, username: user.username, displayName: user.displayName, avatarVersion: user.avatarVersion }} contacts={contacts}>
-      <div className="min-h-screen">
-        <header className="border-b border-line bg-surface">
-          <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-4 py-2.5">
-            <Link href="/" aria-label="Echo, go to chats" className="font-display text-2xl text-ink">
-              Echo
-            </Link>
-            <AccountBadge />
+      {/* A full-screen app shell: the header stays put and the page fills the rest.
+          dvh follows the on-screen keyboard, so the message box stays visible. */}
+      <div className="flex h-dvh flex-col pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] pt-[env(safe-area-inset-top)]">
+        <AppHeader />
+        <main className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+          <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col">
+            <Notices />
+            {children}
           </div>
-        </header>
-        <main className="mx-auto grid max-w-3xl gap-4 px-4 py-5">
-          <Notices />
-          {children}
         </main>
       </div>
     </EchoProvider>
