@@ -50,3 +50,20 @@ export function Avatar({
     </span>
   );
 }
+
+const GROUP_SIZES = {
+  md: 'h-9 w-9 text-sm rounded-[11px]',
+  lg: 'h-11 w-11 text-lg rounded-[13px]',
+};
+
+/** A group's picture: its first letter on a rounded square, so groups stand apart from people. */
+export function GroupAvatar({ name, size = 'md' }: { name: string; size?: keyof typeof GROUP_SIZES }) {
+  return (
+    <span
+      aria-hidden
+      className={`grid shrink-0 place-items-center border border-pigment bg-wash font-display text-ink ${GROUP_SIZES[size]}`}
+    >
+      {name.trim().charAt(0).toUpperCase() || '#'}
+    </span>
+  );
+}

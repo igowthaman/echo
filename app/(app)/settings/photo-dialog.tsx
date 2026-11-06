@@ -71,6 +71,22 @@ export default function PhotoDialog({
   const [crop, setCrop] = useState<Crop>({ zoom: 1, x: 0, y: 0 });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  // Listen to the dialog itself: Escape closes it natively. Some browsers fire only
+  // "cancel" for that, so both events count as closing.
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    const handleClose = () => onCloseRef.current();
+    dialog.addEventListener('cancel', handleClose);
+    dialog.addEventListener('close', handleClose);
+    return () => {
+      dialog.removeEventListener('cancel', handleClose);
+      dialog.removeEventListener('close', handleClose);
+    };
+  }, []);
 
   // Open and close the native modal dialog (it traps focus and handles Escape).
   useEffect(() => {
@@ -159,7 +175,6 @@ export default function PhotoDialog({
     <dialog
       ref={dialogRef}
       aria-labelledby="photo-dialog-title"
-      onClose={() => onClose()}
       // A click on the dialog element itself is a click on the backdrop.
       onClick={(event) => {
         if (event.target === event.currentTarget && !busy) onClose();

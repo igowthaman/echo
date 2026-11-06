@@ -4,9 +4,11 @@
 
 export type ChatMessage = {
   id: string;
-  /** The other person's user ID. */
+  /** The other person's user ID, or "g:<groupId>" for a group conversation. */
   peer: string;
   from: 'me' | 'them';
+  /** Who wrote it. Set on group messages, which can come from any member. */
+  author?: string;
   text: string;
   sentAt: number;
 };

@@ -55,6 +55,22 @@ const MIGRATIONS: string[] = [
    WHERE id IS NULL;
   CREATE UNIQUE INDEX sessions_id ON sessions(id);
   `,
+  // 4: groups. The server knows who is in each group; messages stay peer to peer.
+  `
+  CREATE TABLE groups (
+    id         TEXT PRIMARY KEY,
+    name       TEXT NOT NULL,
+    created_at INTEGER NOT NULL
+  );
+  CREATE TABLE group_members (
+    group_id TEXT NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+    user_id  TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    role     TEXT NOT NULL CHECK (role IN ('owner', 'admin', 'member')),
+    added_at INTEGER NOT NULL,
+    PRIMARY KEY (group_id, user_id)
+  );
+  CREATE INDEX group_members_user_id ON group_members(user_id);
+  `,
 ];
 
 function migrate(db: DatabaseSync) {

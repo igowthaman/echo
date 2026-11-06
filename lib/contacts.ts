@@ -23,3 +23,11 @@ export function addContact(ownerId: string, contactId: string): void {
     .prepare('INSERT OR IGNORE INTO contacts (owner_id, contact_id, added_at) VALUES (?, ?, ?)')
     .run(ownerId, contactId, Date.now());
 }
+
+/** The IDs of everyone in ownerId's contacts. */
+export function contactIdsOf(ownerId: string): Set<string> {
+  const rows = getDb().prepare('SELECT contact_id FROM contacts WHERE owner_id = ?').all(ownerId) as {
+    contact_id: string;
+  }[];
+  return new Set(rows.map((row) => row.contact_id));
+}
