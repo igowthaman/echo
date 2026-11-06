@@ -1,5 +1,4 @@
 "use client";
-import { Grid2, Typography } from "@mui/material";
 import React, { useState } from "react";
 import { useAuthState } from "../lib/auth";
 import { redirect } from "next/navigation";
@@ -10,17 +9,12 @@ function GetStarted() {
 
   if (userName) redirect("/");
   return (
-    <Grid2 container>
-      <Grid2
-        size={{ xs: 11, sm: 10, md: 6, lg: 4, xl: 2 }}
-        margin="auto"
-        marginTop={"40px"}
-        textAlign={"center"}
-        bgcolor={"white"}
-        color={"black"}
+    <div >
+      <div
+        
       >
         <div>
-          <Typography>Echo</Typography>
+          <h1>Echo</h1>
           <div>
             <input
               value={value}
@@ -38,8 +32,8 @@ function GetStarted() {
             Create
           </button>
         </div>
-      </Grid2>
-    </Grid2>
+      </div>
+    </div>
   );
 }
 
