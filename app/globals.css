@@ -2,20 +2,126 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Neutrals are shared by every palette. --wash, --pigment and --ink come from
+   the user's palette (see app/theme/palettes.ts). Components use these tokens
+   only, through Tailwind: bg-paper, bg-wash, text-ink, border-line ... */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --paper: #F8F7F4;
+  --surface: #FFFFFF;
+  --text: #2B2F3A;
+  --muted: #5D6270;
+  --line: #E2DFD8;
+  --danger: #A33A3A;
+  --wash: var(--p-wash);
+  --pigment: var(--p-pigment);
+  --ink: var(--p-ink);
+  --on-ink: #FFFFFF;
+  --blob: 0.9;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --paper: #17191E;
+    --surface: #1F2228;
+    --text: #E8E6E1;
+    --muted: #A2A6B1;
+    --line: #30343C;
+    --danger: #F2A7A7;
+    --wash: var(--p-wash-night);
+    --ink: var(--p-ink-night);
+    --on-ink: #17191E;
+    --blob: 0.35;
+    color-scheme: dark;
   }
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--paper);
+  /* paper grain */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .45 0 0 0 0 .43 0 0 0 0 .4 0 0 0 .08 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+  color: var(--text);
+  font-family: var(--font-body), system-ui, sans-serif;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
+@layer components {
+  /* A card with slightly uneven corners, like a torn sheet of paper. */
+  .card-paper {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 24px 16px 26px 18px / 18px 26px 16px 24px;
+  }
+
+  /* Soft pigment pools behind a section. Parent needs position: relative. */
+  .wash-blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(28px);
+    opacity: var(--blob);
+    pointer-events: none;
+  }
+  .wash-blob-wash {
+    background: radial-gradient(closest-side, var(--wash), transparent);
+  }
+  .wash-blob-pigment {
+    background: radial-gradient(closest-side, color-mix(in srgb, var(--pigment) 55%, transparent), transparent);
+  }
+
+  .field-input {
+    width: 100%;
+    border: 1px solid var(--line);
+    background: var(--paper);
+    color: var(--text);
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+  .field-input::placeholder {
+    color: var(--muted);
+  }
+  .field-input:focus-visible {
+    border-color: var(--ink);
+    outline: 1px solid var(--ink);
+    outline-offset: 0;
+  }
+
+  .btn-ink {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--ink);
+    color: var(--on-ink);
+    font-weight: 600;
+    padding: 10px 18px;
+    border-radius: 12px 10px 13px 9px;
+    transition: filter 0.15s;
+  }
+  .btn-ink:hover {
+    filter: brightness(1.08);
+  }
+  .btn-ink:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    filter: none;
+  }
+
+  .btn-quiet {
+    color: var(--muted);
+    font-weight: 600;
+    padding: 6px 10px;
+    border-radius: 10px;
+  }
+  .btn-quiet:hover {
+    color: var(--text);
+    background: var(--wash);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
 }
