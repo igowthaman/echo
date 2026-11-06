@@ -31,6 +31,15 @@ const MIGRATIONS: string[] = [
     PRIMARY KEY (owner_id, contact_id)
   );
   `,
+  // 2: profile pictures, kept apart from users so user lookups stay small.
+  `
+  CREATE TABLE avatars (
+    user_id    TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    data       BLOB NOT NULL,
+    mime       TEXT NOT NULL,
+    updated_at INTEGER NOT NULL
+  );
+  `,
 ];
 
 function migrate(db: DatabaseSync) {
@@ -53,15 +62,19 @@ function open(): DatabaseSync {
   const db = new DatabaseSync(DB_PATH);
   // WAL lets server.ts and the Next app share the file safely.
   db.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;');
-  migrate(db);
   return db;
 }
 
 // Kept on globalThis so Next's hot reload in development doesn't open a new
-// connection on every edit.
-const globalForDb = globalThis as typeof globalThis & { __echoDb?: DatabaseSync };
+// connection on every edit. server.ts and Next's bundled code share it.
+const globalForDb = globalThis as typeof globalThis & { __echoDb?: DatabaseSync; __echoDbMigrations?: number };
 
 export function getDb(): DatabaseSync {
-  globalForDb.__echoDb ??= open();
-  return globalForDb.__echoDb;
+  const db = (globalForDb.__echoDb ??= open());
+  // The connection outlives hot reloads, so also run migrations added after it opened.
+  if (globalForDb.__echoDbMigrations !== MIGRATIONS.length) {
+    migrate(db);
+    globalForDb.__echoDbMigrations = MIGRATIONS.length;
+  }
+  return db;
 }

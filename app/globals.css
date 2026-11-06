@@ -12,6 +12,7 @@
   --muted: #5D6270;
   --line: #E2DFD8;
   --danger: #A33A3A;
+  --on-danger: #FFFFFF;
   --wash: var(--p-wash);
   --pigment: var(--p-pigment);
   --ink: var(--p-ink);
@@ -27,6 +28,7 @@
     --muted: #A2A6B1;
     --line: #30343C;
     --danger: #F2A7A7;
+    --on-danger: #17191E;
     --wash: var(--p-wash-night);
     --ink: var(--p-ink-night);
     --on-ink: #17191E;
@@ -92,6 +94,7 @@ body {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    gap: 8px;
     background: var(--ink);
     color: var(--on-ink);
     font-weight: 600;
@@ -108,15 +111,58 @@ body {
     filter: none;
   }
 
+  .btn-danger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: var(--danger);
+    color: var(--on-danger);
+    font-weight: 600;
+    padding: 10px 18px;
+    border-radius: 12px 10px 13px 9px;
+    transition: filter 0.15s;
+  }
+  .btn-danger:hover {
+    filter: brightness(1.08);
+  }
+
+  /* Round-cornered toggle used for call controls. */
+  .btn-control {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid var(--line);
+    background: var(--paper);
+    color: var(--text);
+    font-weight: 600;
+    padding: 9px 16px;
+    border-radius: 999px;
+  }
+  .btn-control:hover {
+    border-color: var(--pigment);
+  }
+  .btn-control[aria-pressed='true'] {
+    background: var(--wash);
+    border-color: var(--ink);
+  }
+
   .btn-quiet {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     color: var(--muted);
     font-weight: 600;
     padding: 6px 10px;
     border-radius: 10px;
   }
-  .btn-quiet:hover {
+  .btn-quiet:hover:not(:disabled) {
     color: var(--text);
     background: var(--wash);
+  }
+  .btn-quiet:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
   }
 }
 
