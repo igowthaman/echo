@@ -11,16 +11,30 @@ const handle = app.getRequestHandler();
 
 app.prepare().then(() => {
   const appExpress = express();
+  const handleNextUpgrade = app.getUpgradeHandler();
 
   const server = createServer((req, res) => {
     const parsedUrl = parse(req.url!, true);
     handle(req, res, parsedUrl);
   });
-  const peerServer = ExpressPeerServer(server, {
+
+  // PeerJS's WebSocket server answers every upgrade that isn't its own path
+  // with a 400, which would break Next's dev reload socket. So it gets a
+  // private server that never listens and only receives /peerjs upgrades.
+  const peerSocketServer = createServer();
+  const peerServer = ExpressPeerServer(peerSocketServer, {
     path: '/api',
   });
 
   appExpress.use('/peerjs', peerServer);
+
+  server.on('upgrade', (req, socket, head) => {
+    if (req.url?.startsWith('/peerjs')) {
+      peerSocketServer.emit('upgrade', req, socket, head);
+    } else {
+      handleNextUpgrade(req, socket, head);
+    }
+  });
 
   server.listen(port);
 
