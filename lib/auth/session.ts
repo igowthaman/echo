@@ -10,6 +10,8 @@ export type SessionUser = {
   username: string;
   displayName: string;
   palette: PaletteId;
+  /** Changes whenever the profile picture changes; null when there is none. */
+  avatarVersion: number | null;
 };
 
 // Only the SHA-256 of a token is stored, so a copy of the database can't be
@@ -36,12 +38,21 @@ export function getSessionUser(token: string | undefined): SessionUser | null {
   const tokenHash = hashToken(token);
   const row = db
     .prepare(
-      `SELECT s.expires_at, u.id, u.username, u.display_name, u.palette
-         FROM sessions s JOIN users u ON u.id = s.user_id
+      `SELECT s.expires_at, u.id, u.username, u.display_name, u.palette, a.updated_at AS avatar_version
+         FROM sessions s
+         JOIN users u ON u.id = s.user_id
+         LEFT JOIN avatars a ON a.user_id = u.id
         WHERE s.token_hash = ?`,
     )
     .get(tokenHash) as
-    | { expires_at: number; id: string; username: string; display_name: string; palette: string }
+    | {
+        expires_at: number;
+        id: string;
+        username: string;
+        display_name: string;
+        palette: string;
+        avatar_version: number | null;
+      }
     | undefined;
   if (!row) return null;
 
@@ -58,6 +69,7 @@ export function getSessionUser(token: string | undefined): SessionUser | null {
     username: row.username,
     displayName: row.display_name,
     palette: isPaletteId(row.palette) ? row.palette : DEFAULT_PALETTE,
+    avatarVersion: row.avatar_version ?? null,
   };
 }
 

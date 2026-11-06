@@ -6,6 +6,7 @@ import { SESSION_COOKIE, sessionCookieOptions } from '@/lib/auth/cookie';
 import { getDummyHash, hashPassword, verifyPassword } from '@/lib/auth/password';
 import { clearLoginFailures, isLoginBlocked, recordLoginFailure } from '@/lib/auth/rate-limit';
 import { createSession, deleteExpiredSessions, deleteSession } from '@/lib/auth/session';
+import { displayNameProblem, normalizeUsername, usernameProblem } from '@/lib/profile-rules';
 import { UsernameTakenError, createUser, findLoginByUsername } from '@/lib/users';
 
 export type AuthFormState = {
@@ -14,10 +15,8 @@ export type AuthFormState = {
   displayName?: string;
 };
 
-const USERNAME_PATTERN = /^[a-z0-9_]{3,24}$/;
 const MIN_PASSWORD_LENGTH = 8;
 const MAX_PASSWORD_LENGTH = 200;
-const MAX_DISPLAY_NAME_LENGTH = 40;
 
 async function startSession(userId: string) {
   const token = createSession(userId);
@@ -32,17 +31,13 @@ async function clientIp(): Promise<string> {
 const field = (formData: FormData, name: string) => String(formData.get(name) ?? '');
 
 export async function register(_previous: AuthFormState, formData: FormData): Promise<AuthFormState> {
-  const username = field(formData, 'username').trim().toLowerCase();
+  const username = normalizeUsername(field(formData, 'username'));
   const displayName = field(formData, 'displayName').trim();
   const password = field(formData, 'password');
   const keep = { username, displayName };
 
-  if (!USERNAME_PATTERN.test(username)) {
-    return { ...keep, error: 'Pick a username of 3 to 24 characters using letters, numbers or _.' };
-  }
-  if (displayName.length > MAX_DISPLAY_NAME_LENGTH) {
-    return { ...keep, error: `Keep your name to ${MAX_DISPLAY_NAME_LENGTH} characters or fewer.` };
-  }
+  const nameProblem = usernameProblem(username) ?? displayNameProblem(displayName);
+  if (nameProblem) return { ...keep, error: nameProblem };
   if (password.length < MIN_PASSWORD_LENGTH) {
     return { ...keep, error: `Use at least ${MIN_PASSWORD_LENGTH} characters for your password.` };
   }
@@ -69,7 +64,7 @@ export async function register(_previous: AuthFormState, formData: FormData): Pr
 }
 
 export async function login(_previous: AuthFormState, formData: FormData): Promise<AuthFormState> {
-  const username = field(formData, 'username').trim().toLowerCase();
+  const username = normalizeUsername(field(formData, 'username'));
   const password = field(formData, 'password');
   const ip = await clientIp();
 

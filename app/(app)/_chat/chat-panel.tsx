@@ -1,7 +1,10 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { MAX_MESSAGE_LENGTH, type ChatMessage, type ChatRequest, type Conversation } from './use-chat';
+import { Avatar } from './avatar';
+import { useEchoContext } from './echo-context';
+import { PhoneIcon, PlusIcon, VideoIcon } from './icons';
+import { MAX_MESSAGE_LENGTH, type ChatMessage, type Conversation } from './use-echo';
 
 const timeFormat = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' });
 const dayFormat = new Intl.DateTimeFormat(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
@@ -12,97 +15,167 @@ function formatTime(sentAt: number) {
   return today ? timeFormat.format(date) : `${dayFormat.format(date)}, ${timeFormat.format(date)}`;
 }
 
-function Avatar({ name, connected }: { name: string; connected?: boolean }) {
-  return (
-    <span aria-hidden className="relative grid h-9 w-9 shrink-0 place-items-center rounded-full bg-wash text-sm font-bold text-ink">
-      {name.charAt(0).toUpperCase()}
-      {connected && (
-        <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-surface bg-ink" />
-      )}
-    </span>
-  );
-}
+const presenceLabel = (c: Conversation) => (c.connected ? 'Connected' : c.online ? 'Online' : 'Offline');
 
-export function RequestList({
-  requests,
-  onAccept,
-  onDecline,
-}: {
-  requests: ChatRequest[];
-  onAccept: (peer: string) => void;
-  onDecline: (peer: string) => void;
-}) {
-  if (requests.length === 0) return null;
+export function RequestList() {
+  const echo = useEchoContext();
+  if (echo.requests.length === 0) return null;
   return (
     <section aria-label="Chat requests" className="grid gap-2">
-      {requests.map((request) => (
-        <div key={request.peer} className="card-paper flex flex-wrap items-center gap-3 px-4 py-3">
-          <Avatar name={request.displayName || request.peer} />
-          <p className="min-w-0 flex-1">
-            <strong className="font-semibold">{request.displayName || request.peer}</strong>
-            {request.displayName && request.displayName !== request.peer && (
-              <span className="text-muted"> ({request.peer})</span>
-            )}{' '}
-            wants to chat.
-          </p>
-          <div className="flex gap-2">
-            <button type="button" className="btn-quiet" onClick={() => onDecline(request.peer)}>
-              Decline
-            </button>
-            <button type="button" className="btn-ink" onClick={() => onAccept(request.peer)}>
-              Accept
-            </button>
+      {echo.requests.map(({ id, profile }) => {
+        const name = profile?.displayName ?? 'Someone';
+        return (
+          <div key={id} className="card-paper flex flex-wrap items-center gap-3 px-4 py-3">
+            <Avatar userId={id} name={name} version={profile?.avatarVersion} />
+            <p className="min-w-0 flex-1">
+              <strong className="font-semibold">{name}</strong>
+              {profile && profile.username !== profile.displayName && (
+                <span className="text-muted"> ({profile.username})</span>
+              )}{' '}
+              wants to chat. Accepting adds them to your contacts.
+            </p>
+            <div className="flex gap-2">
+              <button type="button" className="btn-quiet" onClick={() => echo.decline(id)}>
+                Decline
+              </button>
+              <button type="button" className="btn-ink" onClick={() => echo.accept(id)}>
+                Accept
+              </button>
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </section>
   );
 }
 
-export function ChatPanel({
-  conversations,
-  messages,
-  selected,
-  onSelect,
-  onSend,
-  onReconnect,
-}: {
-  conversations: Conversation[];
-  messages: Record<string, ChatMessage[]>;
-  selected: string | null;
-  onSelect: (peer: string | null) => void;
-  onSend: (peer: string, text: string) => boolean;
-  onReconnect: (peer: string) => void;
-}) {
-  const current = conversations.find((c) => c.peer === selected) ?? null;
+// The Contacts heading, with an Add button that opens a username field.
+function AddContact({ startOpen }: { startOpen: boolean }) {
+  const echo = useEchoContext();
+  const [open, setOpen] = useState(startOpen);
+  const [username, setUsername] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const toggleRef = useRef<HTMLButtonElement>(null);
+
+  const close = () => {
+    setOpen(false);
+    setUsername('');
+    setError('');
+    toggleRef.current?.focus();
+  };
+
+  return (
+    <div className="px-4 pb-2 pt-4">
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="font-display text-xl">Contacts</h2>
+        <button
+          ref={toggleRef}
+          type="button"
+          onClick={() => (open ? close() : setOpen(true))}
+          aria-expanded={open}
+          aria-controls="add-contact-form"
+          className="btn-quiet -mr-2 text-sm"
+        >
+          {open ? (
+            'Cancel'
+          ) : (
+            <>
+              <PlusIcon />
+              Add
+            </>
+          )}
+        </button>
+      </div>
+
+      {open && (
+        <form
+          id="add-contact-form"
+          onSubmit={async (event) => {
+            event.preventDefault();
+            setBusy(true);
+            const problem = await echo.addContact(username);
+            setBusy(false);
+            if (problem) {
+              setError(problem);
+              return;
+            }
+            setOpen(false);
+            setUsername('');
+            setError('');
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') close();
+          }}
+          className="mt-3 grid gap-2"
+        >
+          <label htmlFor="add-contact-username" className="text-xs font-semibold text-muted">
+            Add a contact by username
+          </label>
+          <div className="flex gap-2">
+            <input
+              id="add-contact-username"
+              value={username}
+              onChange={(event) => {
+                setUsername(event.target.value);
+                if (error) setError('');
+              }}
+              placeholder="Their username"
+              autoFocus
+              autoCapitalize="none"
+              autoComplete="off"
+              spellCheck={false}
+              aria-invalid={error ? true : undefined}
+              aria-describedby={error ? 'add-contact-error' : undefined}
+              className="field-input min-w-0 flex-1 py-2"
+            />
+            <button type="submit" disabled={busy || !username.trim()} className="btn-ink px-3 py-2 text-sm">
+              {busy ? 'Adding…' : 'Add'}
+            </button>
+          </div>
+          {error && (
+            <p id="add-contact-error" role="alert" className="text-xs text-danger">
+              {error}
+            </p>
+          )}
+        </form>
+      )}
+    </div>
+  );
+}
+
+export function ChatPanel() {
+  const echo = useEchoContext();
+  const { conversations, selected } = echo;
+  const current = conversations.find((c) => c.id === selected) ?? null;
 
   return (
     <section
       aria-label="Conversations"
-      className="card-paper grid h-[min(620px,78vh)] overflow-hidden md:grid-cols-[230px_minmax(0,1fr)]"
+      className="card-paper grid h-[min(760px,calc(100dvh_-_8.5rem))] min-h-[420px] overflow-hidden md:grid-cols-[240px_minmax(0,1fr)]"
     >
       <div className={`${current ? 'hidden md:flex' : 'flex'} min-h-0 flex-col border-line md:border-r`}>
-        <h2 className="px-4 pb-2 pt-4 font-display text-xl">Conversations</h2>
+        <AddContact startOpen={conversations.length === 0} />
         {conversations.length === 0 ? (
-          <p className="px-4 pb-4 text-sm text-muted">No conversations yet. Connect to someone above to start one.</p>
+          <p className="px-4 pb-4 text-sm text-muted">
+            No contacts yet. Add someone by their username to start chatting.
+          </p>
         ) : (
           <ul className="min-h-0 flex-1 overflow-y-auto pb-2">
             {conversations.map((c) => (
-              <li key={c.peer}>
+              <li key={c.id}>
                 <button
                   type="button"
-                  onClick={() => onSelect(c.peer)}
-                  aria-current={c.peer === selected ? 'true' : undefined}
+                  onClick={() => echo.select(c.id)}
+                  aria-current={c.id === selected ? 'true' : undefined}
                   className={`flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-wash ${
-                    c.peer === selected ? 'bg-wash' : ''
+                    c.id === selected ? 'bg-wash' : ''
                   }`}
                 >
-                  <Avatar name={c.displayName} connected={c.connected} />
+                  <Avatar userId={c.id} name={c.displayName} version={c.avatarVersion} dot={c.online ? 'bg-ink' : undefined} />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-semibold">{c.displayName}</span>
-                    <span className="block truncate text-xs text-muted">
-                      {c.connected ? 'Connected' : c.peer}
-                    </span>
+                    <span className="block truncate text-xs text-muted">{presenceLabel(c)}</span>
                   </span>
                   {c.unread > 0 && (
                     <span className="rounded-full bg-ink px-2 py-0.5 text-xs font-bold text-on-ink">
@@ -119,17 +192,10 @@ export function ChatPanel({
 
       <div className={`${current ? 'flex' : 'hidden md:flex'} min-h-0 min-w-0 flex-col`}>
         {current ? (
-          <Thread
-            key={current.peer}
-            conversation={current}
-            messages={messages[current.peer] ?? []}
-            onBack={() => onSelect(null)}
-            onSend={onSend}
-            onReconnect={onReconnect}
-          />
+          <Thread key={current.id} conversation={current} messages={echo.messages[current.id] ?? []} />
         ) : (
           <div className="grid flex-1 place-items-center p-8 text-center text-sm text-muted">
-            Pick a conversation, or connect to someone above.
+            Pick a contact to chat or call.
           </div>
         )}
       </div>
@@ -137,22 +203,12 @@ export function ChatPanel({
   );
 }
 
-function Thread({
-  conversation,
-  messages,
-  onBack,
-  onSend,
-  onReconnect,
-}: {
-  conversation: Conversation;
-  messages: ChatMessage[];
-  onBack: () => void;
-  onSend: (peer: string, text: string) => boolean;
-  onReconnect: (peer: string) => void;
-}) {
+function Thread({ conversation, messages }: { conversation: Conversation; messages: ChatMessage[] }) {
+  const echo = useEchoContext();
   const [draft, setDraft] = useState('');
   const logRef = useRef<HTMLDivElement>(null);
-  const { peer, displayName, connected } = conversation;
+  const { id, displayName, username, online, connected } = conversation;
+  const inCall = echo.calls.state.phase !== 'idle';
 
   // Keep the newest message in view.
   useEffect(() => {
@@ -161,33 +217,59 @@ function Thread({
   }, [messages.length]);
 
   const submit = () => {
-    if (onSend(peer, draft)) setDraft('');
+    if (echo.send(id, draft)) setDraft('');
   };
+
+  const placeholder = connected
+    ? `Message ${displayName}`
+    : online
+      ? `Connecting to ${displayName}…`
+      : `${displayName} is offline. You can message them when you're both online.`;
 
   return (
     <>
       <header className="flex items-center gap-3 border-b border-line px-4 py-3">
-        <button type="button" onClick={onBack} className="btn-quiet -ml-2 md:hidden" aria-label="Back to conversations">
+        <button type="button" onClick={() => echo.select(null)} className="btn-quiet -ml-2 md:hidden" aria-label="Back to contacts">
           ←
         </button>
-        <Avatar name={displayName} connected={connected} />
+        <Avatar userId={id} name={displayName} version={conversation.avatarVersion} dot={online ? 'bg-ink' : undefined} />
         <div className="min-w-0 flex-1">
           <p className="truncate font-semibold">{displayName}</p>
-          <p className="truncate text-xs text-muted">{connected ? `Connected · ${peer}` : `Not connected · ${peer}`}</p>
+          <p className="truncate text-xs text-muted">
+            {presenceLabel(conversation)}
+            {username && ` · ${username}`}
+          </p>
         </div>
-        {!connected && (
-          <button type="button" className="btn-quiet text-sm" onClick={() => onReconnect(peer)}>
-            Connect
+        <div className="flex shrink-0 items-center gap-1">
+          {!connected && online && (
+            <button type="button" className="btn-quiet text-sm" onClick={() => echo.connect(id)}>
+              Connect
+            </button>
+          )}
+          <button
+            type="button"
+            className="btn-quiet text-sm"
+            disabled={!online || inCall}
+            onClick={() => echo.calls.start(id, 'audio')}
+            title={online ? `Voice call ${displayName}` : `${displayName} is offline`}
+          >
+            <PhoneIcon />
+            <span className="sr-only sm:not-sr-only">Call</span>
           </button>
-        )}
+          <button
+            type="button"
+            className="btn-quiet text-sm"
+            disabled={!online || inCall}
+            onClick={() => echo.calls.start(id, 'video')}
+            title={online ? `Video call ${displayName}` : `${displayName} is offline`}
+          >
+            <VideoIcon />
+            <span className="sr-only sm:not-sr-only">Video</span>
+          </button>
+        </div>
       </header>
 
-      <div
-        ref={logRef}
-        role="log"
-        aria-label={`Messages with ${displayName}`}
-        className="min-h-0 flex-1 overflow-y-auto px-4 py-4"
-      >
+      <div ref={logRef} role="log" aria-label={`Messages with ${displayName}`} className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
         {messages.length === 0 ? (
           <p className="pt-8 text-center text-sm text-muted">
             {connected ? `No messages yet. Say hello to ${displayName}.` : 'No messages yet.'}
@@ -200,9 +282,7 @@ function Thread({
                 <li key={m.id} className={`flex flex-col ${mine ? 'items-end' : 'items-start'}`}>
                   <div
                     className={`max-w-[80%] whitespace-pre-wrap break-words px-3.5 py-2 leading-snug ${
-                      mine
-                        ? 'rounded-[16px_16px_6px_16px] bg-ink text-on-ink'
-                        : 'rounded-[16px_16px_16px_6px] bg-wash text-fg'
+                      mine ? 'rounded-[16px_16px_6px_16px] bg-ink text-on-ink' : 'rounded-[16px_16px_16px_6px] bg-wash text-fg'
                     }`}
                   >
                     <span className="sr-only">{mine ? 'You: ' : `${displayName}: `}</span>
@@ -242,7 +322,7 @@ function Thread({
               submit();
             }
           }}
-          placeholder={connected ? `Message ${displayName}` : `Connect to ${displayName} to send a message`}
+          placeholder={placeholder}
           className="field-input max-h-32 min-h-[44px] flex-1 resize-none"
         />
         <button type="submit" disabled={!connected || !draft.trim()} className="btn-ink">

@@ -42,3 +42,6 @@ next-env.d.ts
 
 # local database
 /data/
+
+# compiled custom server (npm run build)
+/dist/
