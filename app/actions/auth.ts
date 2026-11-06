@@ -19,7 +19,10 @@ const MIN_PASSWORD_LENGTH = 8;
 const MAX_PASSWORD_LENGTH = 200;
 
 async function startSession(userId: string) {
-  const token = createSession(userId);
+  const token = createSession(userId, {
+    userAgent: (await headers()).get('user-agent'),
+    ip: await clientIp(),
+  });
   (await cookies()).set(SESSION_COOKIE, token, sessionCookieOptions());
 }
 

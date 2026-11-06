@@ -188,10 +188,15 @@ export function useEcho(me: Me, initialContacts: ContactWithPresence[]) {
   // ---------- people ----------
 
   async function refreshPeople(ids: string[]) {
+    // Sent even with nobody to ask about: the request also checks this device is still logged in.
     const unique = [...new Set(ids)].filter((id) => id !== me.id).slice(0, 100);
-    if (unique.length === 0) return;
     try {
       const response = await fetch(`/api/users?ids=${unique.join(',')}`, { cache: 'no-store' });
+      if (response.status === 401) {
+        // This device was logged out, from Settings on another device or by expiry.
+        window.location.assign('/login');
+        return;
+      }
       if (!response.ok) return;
       const { users } = (await response.json()) as { users: ContactWithPresence[] };
       setProfiles((all) => {

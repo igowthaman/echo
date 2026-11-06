@@ -1,14 +1,49 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { requireUser } from '@/lib/auth/current-user';
+import { describeDevice } from '@/lib/auth/device';
+import { listSessions } from '@/lib/auth/session';
 import { ArrowLeftIcon } from '../_chat/icons';
+import DevicesCard, { type DeviceRow } from './devices-card';
 import PalettePicker from './palette-picker';
 import ProfileCard from './profile-card';
 
 export const metadata: Metadata = { title: 'Settings · Echo' };
 
+const signedInFormat = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+const relative = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
+
+function activeLabel(lastSeenAt: number, now: number): string {
+  const minutes = Math.round((now - lastSeenAt) / 60_000);
+  if (minutes < 5) return 'Active now';
+  if (minutes < 60) return `Active ${relative.format(-minutes, 'minute')}`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `Active ${relative.format(-hours, 'hour')}`;
+  return `Active ${relative.format(-Math.round(hours / 24), 'day')}`;
+}
+
+// "::ffff:192.168.1.5" is how Node writes an IPv4 address on a dual-stack socket.
+const tidyIp = (ip: string | null) => (!ip || ip === 'unknown' ? null : ip.replace(/^::ffff:/, ''));
+
 export default async function SettingsPage() {
   const user = await requireUser();
+  const now = Date.now();
+  const devices: DeviceRow[] = listSessions(user.id)
+    .map((session) => {
+      const device = describeDevice(session.userAgent);
+      const current = session.id === user.sessionId;
+      return {
+        id: session.id,
+        name: device.name,
+        kind: device.kind,
+        current,
+        active: current ? 'Active now' : activeLabel(session.lastSeenAt, now),
+        signedIn: `Signed in ${signedInFormat.format(session.createdAt)}`,
+        ip: tidyIp(session.ip),
+      };
+    })
+    // This device first, then the most recently active.
+    .sort((a, b) => Number(b.current) - Number(a.current));
 
   return (
     <div className="grid gap-4">
@@ -35,6 +70,8 @@ export default async function SettingsPage() {
         </p>
         <PalettePicker current={user.palette} />
       </section>
+
+      <DevicesCard devices={devices} />
     </div>
   );
 }

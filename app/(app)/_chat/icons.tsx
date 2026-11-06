@@ -68,3 +68,18 @@ export const CloseIcon = () => (
     <path d="m6 6 12 12" />
   </svg>
 );
+
+export const SmartphoneIcon = () => (
+  <svg {...base}>
+    <rect width="14" height="20" x="5" y="2" rx="2" />
+    <path d="M12 18h.01" />
+  </svg>
+);
+
+export const ComputerIcon = () => (
+  <svg {...base}>
+    <rect width="20" height="14" x="2" y="3" rx="2" />
+    <path d="M8 21h8" />
+    <path d="M12 17v4" />
+  </svg>
+);

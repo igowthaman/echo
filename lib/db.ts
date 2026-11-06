@@ -40,6 +40,21 @@ const MIGRATIONS: string[] = [
     updated_at INTEGER NOT NULL
   );
   `,
+  // 3: device details per session, for the Devices list in Settings.
+  // Sessions from before this get an ID and estimated times; their device is unknown.
+  `
+  ALTER TABLE sessions ADD COLUMN id TEXT;
+  ALTER TABLE sessions ADD COLUMN created_at INTEGER;
+  ALTER TABLE sessions ADD COLUMN last_seen_at INTEGER;
+  ALTER TABLE sessions ADD COLUMN user_agent TEXT;
+  ALTER TABLE sessions ADD COLUMN ip TEXT;
+  UPDATE sessions
+     SET id = lower(hex(randomblob(16))),
+         created_at = expires_at - 2592000000,
+         last_seen_at = expires_at - 2592000000
+   WHERE id IS NULL;
+  CREATE UNIQUE INDEX sessions_id ON sessions(id);
+  `,
 ];
 
 function migrate(db: DatabaseSync) {
